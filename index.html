@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🦞 AmirosAI Control Center</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#f5f7fa;--bg2:#ffffff;--bg3:#eef1f5;--border:#d0d7de;
+    --text:#1f2328;--muted:#57606a;--blue:#0969da;--green:#1a7f37;
+    --yellow:#9a6700;--red:#d1242f;--purple:#7c3aed;--orange:#c35d0a;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px}
+  h1{font-size:20px;font-weight:700}
+  h2{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+  /* Login */
+  #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
+  .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:40px 48px;
+    text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.08);min-width:320px}
+  .login-box h1{margin-bottom:8px}
+  .login-box p{color:var(--muted);font-size:13px;margin-bottom:24px}
+  .login-box input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;
+    font-size:14px;background:var(--bg3);color:var(--text);outline:none;margin-bottom:12px}
+  .login-box input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(9,105,218,.1)}
+  .login-box button{width:100%;padding:10px;background:var(--blue);color:#fff;border:none;
+    border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+  .login-box button:hover{background:#0860c3}
+  .login-err{color:var(--red);font-size:12px;margin-top:8px;min-height:18px}
+  /* Dashboard */
+  #dashboard{display:none}
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 24px;
+    display:flex;align-items:center;justify-content:space-between;
+    box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .header-left{display:flex;align-items:center;gap:12px}
+  .badge{background:var(--green);color:#fff;font-size:10px;font-weight:700;
+    padding:2px 8px;border-radius:12px}
+  .badge-snapshot{background:var(--muted)}
+  .ts{color:var(--muted);font-size:11px}
+  .grid{display:grid;gap:16px;padding:20px 24px}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-2{grid-template-columns:repeat(2,1fr)}
+  .grid-1{grid-template-columns:1fr}
+  @media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:800px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px}
+  .card-title{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  .card-value{font-size:28px;font-weight:700;line-height:1.1}
+  .card-sub{color:var(--muted);font-size:11px;margin-top:4px}
+  .green{color:var(--green)} .red{color:var(--red)} .yellow{color:var(--yellow)}
+  .blue{color:var(--blue)} .purple{color:var(--purple)} .orange{color:var(--orange)}
+  .progress-wrap{margin-top:10px}
+  .progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px}
+  .progress-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:3px}
+  .chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px}
+  .chart-wrap{position:relative;height:200px}
+  .skills-grid{display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto}
+  .skill-tag{background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+    padding:3px 10px;font-size:11px;color:var(--text)}
+  .chan-row{display:flex;align-items:center;gap:8px;padding:8px 0;
+    border-bottom:1px solid var(--border)}
+  .chan-row:last-child{border-bottom:none}
+  .chan-name{flex:1;font-weight:600}
+  .chan-status{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+  .chan-ok{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3)}
+  .chan-off{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}
+  .backup-item{display:flex;justify-content:space-between;padding:5px 0;
+    border-bottom:1px solid var(--border);font-size:11px}
+  .backup-item:last-child{border-bottom:none}
+  .forecast-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+    background:var(--border);border-radius:8px;overflow:hidden;margin-top:10px}
+  .forecast-cell{background:var(--bg2);padding:10px;text-align:center}
+  .forecast-cell .label{font-size:10px;color:var(--muted);margin-bottom:4px}
+  .forecast-cell .val{font-size:16px;font-weight:700}
+  .snapshot-banner{background:#fff8c5;border:1px solid #f0d87c;color:#9a6700;
+    padding:8px 24px;font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div style="font-size:40px;margin-bottom:12px">🦞</div>
+    <h1>AmirosAI Control Center</h1>
+    <p>Enter your password to access the dashboard</p>
+    <input type="password" id="pwd-input" placeholder="Password"
+           onkeydown="if(event.key==='Enter')tryLogin()">
+    <button onclick="tryLogin()">Enter Dashboard</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="snapshot-banner">
+    📸 Snapshot — Generated: 2026-03-17 20:08 · Data updates hourly via Mac cron
+  </div>
+  <div class="header">
+    <div class="header-left">
+      <span style="font-size:24px">🦞</span>
+      <div>
+        <h1>AmirosAI Control Center</h1>
+        <span class="ts" id="ts">Loading…</span>
+      </div>
+      <span class="badge badge-snapshot">SNAPSHOT</span>
+    </div>
+    <div>
+      <span class="ts">Last updated: 2026-03-17 20:08</span>
+    </div>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="grid grid-4">
+    <div class="card">
+      <div class="card-title">💰 Today's Cost</div>
+      <div class="card-value blue" id="kpi-today">—</div>
+      <div class="card-sub" id="kpi-yesterday">Yesterday: —</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📅 Month-to-Date</div>
+      <div class="card-value" id="kpi-month">—</div>
+      <div class="progress-wrap">
+        <div class="progress-label"><span id="kpi-budget-label">Budget</span><span id="kpi-budget-pct">0%</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="kpi-budget-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📈 Monthly Forecast</div>
+      <div class="card-value" id="kpi-forecast">—</div>
+      <div class="card-sub" id="kpi-safe-daily">Safe daily: —</div>
+    </div>
+    <div class="card">
+      <div class="card-title">⚡ Cache Saved (30d)</div>
+      <div class="card-value purple" id="kpi-cache-tokens">—</div>
+      <div class="card-sub" id="kpi-cache-cost">Cache cost: —</div>
+    </div>
+  </div>
+
+  <!-- Forecast -->
+  <div class="grid grid-1" style="padding-top:0">
+    <div class="chart-card">
+      <h2>📊 Cost Forecast</h2>
+      <div class="forecast-grid" id="forecast-grid"></div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid grid-2" style="padding-top:0">
+    <div class="chart-card">
+      <h2>💵 Daily Cost (30 days)</h2>
+      <div class="chart-wrap"><canvas id="costChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>🪙 Token Usage by Type (30 days)</h2>
+      <div class="chart-wrap"><canvas id="tokenChart"></canvas></div>
+    </div>
+  </div>
+  <div class="grid grid-2" style="padding-top:0">
+    <div class="chart-card">
+      <h2>📦 Cache Tokens (30 days)</h2>
+      <div class="chart-wrap"><canvas id="cacheChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>💲 Model Cost Breakdown (estimated, 30d)</h2>
+      <div class="chart-wrap"><canvas id="modelChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Channels + Sessions + Skills -->
+  <div class="grid grid-3" style="padding-top:0">
+    <div class="card">
+      <h2>📡 Channels</h2>
+      <div id="channels"></div>
+    </div>
+    <div class="card">
+      <h2>💾 Sessions</h2>
+      <div id="sessions-info"></div>
+      <div style="margin-top:16px"><h2>🎯 Model Routing</h2></div>
+      <div id="model-routing"></div>
+    </div>
+    <div class="card">
+      <h2>🗄️ Backups</h2>
+      <div id="backups-list"></div>
+    </div>
+  </div>
+
+  <!-- Skills -->
+  <div class="grid grid-1" style="padding-top:0">
+    <div class="card">
+      <h2 id="skills-title">⚙️ Installed Skills</h2>
+      <div class="skills-grid" id="skills-list"></div>
+    </div>
+  </div>
+
+  <!-- Crons -->
+  <div class="grid grid-1" style="padding-top:0">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 style="margin-bottom:0">⏰ Scheduled Jobs</h2>
+        <div id="cron-summary" style="display:flex;gap:8px;font-size:11px"></div>
+      </div>
+      <div id="cron-cards"></div>
+    </div>
+  </div>
+
+  <div style="height:32px"></div>
+</div>
+
+<script>
+// ── Auth ───────────────────────────────────────────────────────────────────
+const HASH = '14fbf5f9614b953f1678d3d21b7d23edbbca4bcf4d4f2e170ba618163be89100';
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function tryLogin() {
+  const pwd = document.getElementById('pwd-input').value;
+  const h = await sha256(pwd);
+  if (h === HASH) {
+    sessionStorage.setItem('amirosai_auth', '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    renderAll(DATA);
+  } else {
+    document.getElementById('login-err').textContent = '❌ Incorrect password';
+    document.getElementById('pwd-input').value = '';
+  }
+}
+
+// Auto-show if already authenticated in this session
+if (sessionStorage.getItem('amirosai_auth') === '1') {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+}
+
+// ── Embedded data ─────────────────────────────────────────────────────────
+const DATA = {"ts": "2026-03-17T20:08:51.110074", "cost": {"today": 4.0228, "yesterday": 1.0201, "week_total": 4.0228, "week_avg": 2.0114, "week_forecast": 14.0799, "month_total": 8.3824, "month_avg_daily": 0.4931, "month_forecast": 15.2856, "budget": 150.0, "budget_pct": 5.6, "forecast_pct": 10.2, "days_remaining": 14, "safe_daily": 10.1155, "cache_tokens": 7779270, "cache_cost": 4.6485, "total_tokens_30d": 9854412}, "charts": {"labels": ["03-04", "03-07", "03-08", "03-09", "03-10", "03-11", "03-12", "03-13", "03-14", "03-15", "03-16", "03-17"], "costs": [0.4119, 0.1127, 0.8047, 0.238, 0.16, 0.111, 0.235, 0.408, 0.5597, 0.2986, 1.0201, 4.0228], "tokens": [317064, 43692, 683428, 62663, 42228, 28471, 202568, 193378, 317443, 255606, 807252, 6900619], "cache_read": [246886, 19020, 535377, 0, 0, 0, 158048, 99194, 192613, 196785, 598203, 4749225], "cache_write": [63432, 23363, 139839, 62388, 42079, 28088, 42649, 91903, 121704, 57080, 203904, 107490], "input_tokens": [104, 24, 291, 9, 6, 10, 36, 47, 110, 53, 94, 6317563], "output_tokens": [6642, 1285, 7921, 266, 143, 373, 1835, 2234, 3016, 1688, 5051, 52547]}, "skills": {"ready": ["clawhub", "gh-issues", "github", "gog", "healthcheck", "himalaya", "mcporter", "nano-banana-pro", "nano-pdf", "node-connect", "openai-image-gen", "openai-whisper-api", "skill-creator", "slack", "summarize", "video-frames", "weather", "notebooklm", "agentmail", "humanizer", "claw-release", "clawsec-clawhub-checker", "clawsec-feed", "clawsec-nanoclaw", "clawsec-suite", "clawtributor", "openclaw-audit-watchdog", "prompt-agent", "soul-guardian", "cold-reachout-skywatch", "find-skills", "firecrawl", "garmin-connect", "gcalcli-calendar", "granola-mcp", "Hebrew", "ontopo", "oref-native", "Productivity", "qmd-search", "railil", "raindrop", "reminders", "remotion-best-practices", "remotion-video-toolkit", "reuters-ai-feed", "Self-Improving Agent With Self-Reflection", "skywatch-support", "subscription-scanner", "telegram-rss-monitor", "universal-video-downloader", "wolt-cli"], "missing_count": 37, "total": 89}, "backups": {"list": [{"date": "2026-03-17", "files": ["HEARTBEAT.md", "MEMORY.md", "SOUL.md", "AGENTS.md", "TOOLS.md"], "size_kb": 26}], "last": "2026-03-17", "age_days": 0, "count": 1}, "crons": [{"id": "3b1d6e28…", "name": "Daily Workspace Backu...", "schedule": "cron 0 23 * * * @ Asia/Jerusa...", "next": "in 3h", "last": "21h ago", "status": "error", "target": "isolated  main", "model": "google/gemini-2.5..."}, {"id": "94a99471…", "name": "גיבוי יומי - AmirosAI...", "schedule": "cron 0 23 * * * @ Asia/Jerusa...", "next": "in 3h", "last": "-", "status": "idle", "target": "isolated  main", "model": "google/gemini-2.5..."}, {"id": "a66457b6…", "name": "תזכורת: בדיקת Perplex...", "schedule": "at 2026-03-18 07:00Z", "next": "in 13h", "last": "-", "status": "idle", "target": "main      main", "model": "-"}, {"id": "0b7a3071…", "name": "סקירת תזכורות יומית", "schedule": "cron 0 17 * * 0-4 @ Asia/Jeru...", "next": "in 21h", "last": "3h ago", "status": "ok", "target": "main      main", "model": "-"}, {"id": "bda0cd32…", "name": "דוח עלויות יומי - Gemini", "schedule": "cron 0 18 * * * @ Asia/Jerusa...", "next": "in 22h", "last": "2h ago", "status": "error", "target": "isolated  main", "model": "google/gemini-2.5..."}, {"id": "322b95ef…", "name": "סיכום הוצאות שבועי", "schedule": "cron 0 10 * * 4 @ Asia/Jerusa...", "next": "in 2d", "last": "5d ago", "status": "error", "target": "isolated  main", "model": "google/gemini-2.5..."}, {"id": "34f6b07a…", "name": "Weekly MEMORY.md Arch...", "schedule": "cron 0 10 * * 5 @ Asia/Jerusa...", "next": "in 3d", "last": "-", "status": "idle", "target": "isolated  main", "model": "google/gemini-2.5..."}, {"id": "9210e629…", "name": "תזכורת לקלאודיה - חול...", "schedule": "at 2026-03-20 14:30Z", "next": "in 3d", "last": "-", "status": "idle", "target": "main      main", "model": "-"}, {"id": "cbeabc1f…", "name": "תזכורת: ארוחת ערב אצל...", "schedule": "at 2026-03-21 16:25Z", "next": "in 4d", "last": "-", "status": "idle", "target": "main      main", "model": "-"}, {"id": "03741c40…", "name": "healthcheck:security-...", "schedule": "cron 0 9 * * 0 @ Asia/Jerusal...", "next": "in 5d", "last": "2d ago", "status": "error", "target": "isolated  main", "model": "google/gemini-2.5..."}, {"id": "b3146983…", "name": "מסירת רכב חדש שלמה סי...", "schedule": "at 2026-03-22 07:55Z", "next": "in 5d", "last": "-", "status": "idle", "target": "isolated  main", "model": "-"}, {"id": "fc1e1ba1…", "name": "בדיקת עדכוני OpenClaw...", "schedule": "cron 30 10 * * 0 @ Asia/Jerus...", "next": "in 5d", "last": "2d ago", "status": "error", "target": "isolated  main", "model": "google/gemini-2.5..."}, {"id": "8213be57…", "name": "תזכורת: ריצה קלה - 6 ק״מ", "schedule": "at 2026-03-23 03:55Z", "next": "in 5d", "last": "-", "status": "idle", "target": "main      main", "model": "-"}, {"id": "266b799e…", "name": "סיכום הוצאות חודשי", "schedule": "cron 0 10 1 * * @ Asia/Jerusa...", "next": "in 15d", "last": "-", "status": "idle", "target": "isolated  main", "model": "google/gemini-2.5..."}, {"id": "9460f0d8…", "name": "Oshkosh Swag Order Re...", "schedule": "at 2026-05-01 07:00Z", "next": "in 45d", "last": "-", "status": "idle", "target": "isolated  main", "model": "-"}], "system": {"cpu_pct": null, "mem_pct": null, "mem_used_gb": null, "mem_total_gb": null, "disk_pct": null, "disk_used_gb": null, "disk_total_gb": null, "openclaw_proc": null}, "sessions": {"count": 35, "size_mb": 1}, "channels": {"whatsapp": {"configured": true, "running": false, "connected": false}, "telegram": {"configured": true, "running": false, "connected": false}, "slack": {"configured": true, "running": false, "connected": false}}};
+
+// ── Render helpers ────────────────────────────────────────────────────────
+function fmt(n){ return n < 0.01 && n > 0 ? '$'+n.toFixed(4) : '$'+n.toFixed(2); }
+function fmtK(n){ return n >= 1000000 ? (n/1000000).toFixed(1)+'M' : n >= 1000 ? (n/1000).toFixed(0)+'K' : n; }
+function colorClass(p){ return p<50?'green':p<85?'yellow':'red'; }
+function colorForPct(p){ return p<50?'#3fb950':p<80?'#d29922':'#f85149'; }
+
+function renderKPIs(cost){
+  document.getElementById('kpi-today').textContent = fmt(cost.today);
+  document.getElementById('kpi-yesterday').textContent = 'Yesterday: ' + fmt(cost.yesterday);
+  const mc = document.getElementById('kpi-month');
+  mc.textContent = fmt(cost.month_total);
+  mc.className = 'card-value ' + (cost.budget_pct < 50 ? 'green' : cost.budget_pct < 85 ? 'yellow' : 'red');
+  document.getElementById('kpi-budget-label').textContent = 'of $' + cost.budget + ' budget';
+  document.getElementById('kpi-budget-pct').textContent = cost.budget_pct + '%';
+  const bar = document.getElementById('kpi-budget-bar');
+  bar.style.width = Math.min(cost.budget_pct, 100) + '%';
+  bar.style.background = colorForPct(cost.budget_pct);
+  const fc = document.getElementById('kpi-forecast');
+  fc.textContent = fmt(cost.month_forecast);
+  fc.className = 'card-value ' + (cost.forecast_pct < 85 ? 'green' : cost.forecast_pct < 100 ? 'yellow' : 'red');
+  document.getElementById('kpi-safe-daily').textContent =
+    'Safe daily: ' + fmt(cost.safe_daily) + ' (' + cost.days_remaining + ' days left)';
+  document.getElementById('kpi-cache-tokens').textContent = fmtK(cost.cache_tokens);
+  document.getElementById('kpi-cache-cost').textContent = 'Cache cost: ' + fmt(cost.cache_cost);
+
+  document.getElementById('forecast-grid').innerHTML = `
+    <div class="forecast-cell"><div class="label">📅 Daily Avg</div><div class="val blue">${fmt(cost.month_avg_daily)}</div></div>
+    <div class="forecast-cell"><div class="label">📆 Week Forecast</div><div class="val ${cost.week_forecast < 10 ? 'green' : 'yellow'}">${fmt(cost.week_forecast)}</div></div>
+    <div class="forecast-cell"><div class="label">🗓️ Month Forecast</div><div class="val ${cost.forecast_pct < 100 ? 'green' : 'red'}">${fmt(cost.month_forecast)} / $${cost.budget}</div></div>
+    <div class="forecast-cell"><div class="label">🗓 Week So Far</div><div class="val">${fmt(cost.week_total)}</div></div>
+    <div class="forecast-cell"><div class="label">📊 Month So Far</div><div class="val">${fmt(cost.month_total)}</div></div>
+    <div class="forecast-cell"><div class="label">🎯 Budget Used</div><div class="val ${colorClass(cost.budget_pct)}">${cost.budget_pct}%</div></div>
+  `;
+}
+
+let costChart, tokenChart, cacheChart, modelChart;
+function renderCharts(charts){
+  const defaults = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#57606a',font:{size:9}},grid:{color:'#eef1f5'}},
+      y:{ticks:{color:'#57606a',font:{size:9}},grid:{color:'#eef1f5'}}
+    }
+  };
+  if(costChart) costChart.destroy();
+  costChart = new Chart(document.getElementById('costChart'), {
+    type:'bar',
+    data:{labels:charts.labels,datasets:[{data:charts.costs,
+      backgroundColor:charts.costs.map(v=>v>2?'#f85149':v>0.5?'#d29922':'#58a6ff'),borderRadius:3}]},
+    options:{...defaults,plugins:{...defaults.plugins,tooltip:{callbacks:{label:c=>'$'+c.raw.toFixed(4)}}}}
+  });
+  if(tokenChart) tokenChart.destroy();
+  tokenChart = new Chart(document.getElementById('tokenChart'), {
+    type:'bar',
+    data:{labels:charts.labels,datasets:[
+      {label:'Input',data:charts.input_tokens,backgroundColor:'#58a6ff',borderRadius:2},
+      {label:'Output',data:charts.output_tokens,backgroundColor:'#3fb950',borderRadius:2}
+    ]},
+    options:{...defaults,plugins:{legend:{display:true,labels:{color:'#57606a',font:{size:10}}}}}
+  });
+  if(cacheChart) cacheChart.destroy();
+  cacheChart = new Chart(document.getElementById('cacheChart'), {
+    type:'bar',
+    data:{labels:charts.labels,datasets:[
+      {label:'Cache Read',data:charts.cache_read,backgroundColor:'#bc8cff',borderRadius:2},
+      {label:'Cache Write',data:charts.cache_write,backgroundColor:'#ffa657',borderRadius:2}
+    ]},
+    options:{...defaults,plugins:{legend:{display:true,labels:{color:'#57606a',font:{size:10}}}}}
+  });
+  if(modelChart) modelChart.destroy();
+  const totalCost = charts.costs.reduce((a,b)=>a+b,0);
+  modelChart = new Chart(document.getElementById('modelChart'), {
+    type:'doughnut',
+    data:{
+      labels:['Gemini Flash (main)','Gemini 2.5 Flash (heartbeat)','Claude Sonnet 4.5 (fallback)','Other'],
+      datasets:[{
+        data:[Math.round(totalCost*0.72*100)/100,Math.round(totalCost*0.05*100)/100,
+              Math.round(totalCost*0.10*100)/100,Math.round(totalCost*0.13*100)/100],
+        backgroundColor:['#58a6ff','#3fb950','#bc8cff','#ffa657'],borderWidth:0
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{color:'#57606a',font:{size:10},boxWidth:12}},
+        tooltip:{callbacks:{label:c=>`${c.label}: $${c.raw.toFixed(3)}`}}}
+    }
+  });
+}
+
+function renderChannels(channels){
+  const icons = {whatsapp:'💬',telegram:'✈️',slack:'💼'};
+  document.getElementById('channels').innerHTML = Object.entries(channels).map(([name,info])=>{
+    const ok = info.configured;
+    return `<div class="chan-row">
+      <span>${icons[name]||'📡'}</span>
+      <span class="chan-name">${name.charAt(0).toUpperCase()+name.slice(1)}</span>
+      ${ok?'<span class="chan-status chan-ok">✓ configured</span>':'<span class="chan-status chan-off">✗ off</span>'}
+    </div>`;
+  }).join('');
+}
+
+function renderSessions(sessions){
+  document.getElementById('sessions-info').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="background:var(--bg3);border-radius:6px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:var(--blue)">${sessions.count}</div>
+        <div style="font-size:10px;color:var(--muted)">Sessions</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:6px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:var(--purple)">${sessions.size_mb}MB</div>
+        <div style="font-size:10px;color:var(--muted)">Context Cache</div>
+      </div>
+    </div>`;
+}
+
+function renderModelRouting(){
+  document.getElementById('model-routing').innerHTML = `
+    <div style="font-size:11px">
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 0"><span style="width:10px;height:10px;border-radius:50%;background:#58a6ff;display:inline-block"></span><span>Primary: <strong>Gemini Flash</strong></span></div>
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 0"><span style="width:10px;height:10px;border-radius:50%;background:#bc8cff;display:inline-block"></span><span>Fallback 1: <strong>Claude Sonnet 4.5</strong></span></div>
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 0"><span style="width:10px;height:10px;border-radius:50%;background:#3fb950;display:inline-block"></span><span>Heartbeat: <strong>Gemini 2.5 Flash</strong></span></div>
+    </div>`;
+}
+
+function renderSkills(skills){
+  document.getElementById('skills-title').textContent = `⚙️ Installed Skills (${skills.ready.length}/${skills.total})`;
+  document.getElementById('skills-list').innerHTML = skills.ready.map(s=>`<span class="skill-tag">${s}</span>`).join('');
+}
+
+function renderBackups(backups){
+  if(!backups.list.length){
+    document.getElementById('backups-list').innerHTML = '<div style="color:var(--red);font-size:11px">No backups found</div>';
+    return;
+  }
+  const ageColor = backups.age_days===0?'#3fb950':backups.age_days<2?'#d29922':'#f85149';
+  const header = `<div style="margin-bottom:8px;font-size:11px">Last backup: <span style="color:${ageColor};font-weight:600">${backups.last}</span> (${backups.age_days===0?'today':backups.age_days+' days ago'}) · ${backups.count} stored</div>`;
+  const rows = backups.list.slice(-7).reverse().map(b=>`
+    <div class="backup-item">
+      <span>${b.date}</span>
+      <span style="color:var(--muted)">${b.files.filter(f=>f!='backup-info.txt').join(' · ')}</span>
+      <span style="color:var(--muted)">${b.size_kb}KB</span>
+    </div>`).join('');
+  document.getElementById('backups-list').innerHTML = header + rows;
+}
+
+function renderCrons(crons){
+  const statusDef = {
+    ok:   {color:'#1a7f37',bg:'#dafbe1',border:'#a7f0ba',label:'● Active'},
+    idle: {color:'#9a6700',bg:'#fff8c5',border:'#f0d87c',label:'◌ Idle'},
+    error:{color:'#d1242f',bg:'#ffebe9',border:'#ffcecb',label:'✕ Error'},
+  };
+  const modelShort = m => !m||m==='-'?'':m.replace('google/','').replace('anthropic/','').replace('deepseek/','').replace('-preview','').replace('deepseek-reasoner','DeepSeek R1');
+  const counts = {ok:0,idle:0,error:0};
+  crons.forEach(c=>{ if(counts[c.status]!==undefined) counts[c.status]++; });
+  document.getElementById('cron-summary').innerHTML = Object.entries(counts).map(([s,n])=>{
+    if(!n) return '';
+    const d=statusDef[s];
+    return `<span style="background:${d.bg};color:${d.color};border:1px solid ${d.border};padding:2px 10px;border-radius:10px;font-weight:600">${d.label} ${n}</span>`;
+  }).join('');
+  const order=['error','ok','idle'];
+  const rows = order.flatMap(status=>{
+    const group=crons.filter(c=>c.status===status);
+    if(!group.length) return [];
+    const d=statusDef[status]||statusDef.idle;
+    return group.map(c=>{
+      const model=modelShort(c.model);
+      return `<div style="display:grid;grid-template-columns:3fr 1.4fr 1fr 1fr auto;align-items:center;
+        gap:12px;padding:10px 14px;border-radius:8px;margin-bottom:6px;background:${d.bg};border:1px solid ${d.border}">
+        <div><div style="font-weight:600;font-size:13px">${c.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${c.schedule}</div></div>
+        <div style="font-size:11px"><div style="color:var(--muted);margin-bottom:1px">Next</div><div>${c.next||'—'}</div></div>
+        <div style="font-size:11px"><div style="color:var(--muted);margin-bottom:1px">Last</div><div>${c.last&&c.last!=='-'?c.last:'—'}</div></div>
+        <div style="font-size:11px"><div style="color:var(--muted);margin-bottom:1px">Target</div><div>${c.target||'—'}</div></div>
+        <div style="text-align:right">
+          <span style="background:${d.bg};color:${d.color};border:1px solid ${d.border};padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700">${c.status.toUpperCase()}</span>
+          ${model?`<div style="font-size:10px;color:var(--muted);margin-top:3px">${model}</div>`:''}
+        </div></div>`;
+    });
+  });
+  document.getElementById('cron-cards').innerHTML = rows.join('')||'<div style="color:var(--muted);font-size:12px">No scheduled jobs</div>';
+}
+
+function renderAll(d){
+  document.getElementById('ts').textContent = 'Snapshot: ' + new Date(d.ts).toLocaleString();
+  renderKPIs(d.cost);
+  renderCharts(d.charts);
+  renderChannels(d.channels);
+  renderSessions(d.sessions);
+  renderModelRouting();
+  renderSkills(d.skills);
+  renderBackups(d.backups);
+  renderCrons(d.crons);
+}
+
+// Auto-render if already authenticated
+if (sessionStorage.getItem('amirosai_auth') === '1') {
+  renderAll(DATA);
+}
+</script>
+</body></html>
