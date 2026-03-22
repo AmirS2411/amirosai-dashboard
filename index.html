@@ -89,6 +89,14 @@
            onkeydown="if(event.key==='Enter')tryLogin()">
     <button onclick="tryLogin()">Enter Dashboard</button>
     <div class="login-err" id="login-err"></div>
+    <a href="#" id="forgot-link" onclick="showForgot(event)" style="display:block;margin-top:16px;color:var(--muted);font-size:12px;text-decoration:none">Forgot password?</a>
+    <div id="forgot-panel" style="display:none;margin-top:12px;text-align:center">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Enter your phone number to receive a password hint via WhatsApp:</p>
+      <input type="tel" id="forgot-phone" placeholder="+972..."
+             style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg3);color:var(--text);outline:none;margin-bottom:8px;direction:ltr;text-align:left">
+      <button onclick="sendHint()" style="width:100%;padding:8px;background:var(--green);font-size:13px">Send Hint</button>
+      <div id="forgot-msg" style="font-size:12px;margin-top:8px;min-height:18px"></div>
+    </div>
   </div>
 </div>
 
@@ -229,6 +237,31 @@ async function tryLogin() {
     document.getElementById('login-err').textContent = '❌ Incorrect password';
     document.getElementById('pwd-input').value = '';
   }
+}
+
+function showForgot(e) {
+  e.preventDefault();
+  document.getElementById('forgot-panel').style.display = 'block';
+  document.getElementById('forgot-link').style.display = 'none';
+}
+
+function sendHint() {
+  const phone = document.getElementById('forgot-phone').value.trim();
+  const msgEl = document.getElementById('forgot-msg');
+  const allowed = ['+972544222178', '+972537730771'];
+  const normalized = phone.replace(/[\s\-()]/g, '');
+  if (!normalized.match(/^\+?\d{10,15}$/)) {
+    msgEl.textContent = '❌ Enter a valid phone number';
+    msgEl.style.color = 'var(--red)';
+    return;
+  }
+  if (!allowed.some(n => normalized.endsWith(n.replace('+','')))) {
+    msgEl.textContent = '❌ This number is not authorized';
+    msgEl.style.color = 'var(--red)';
+    return;
+  }
+  msgEl.textContent = '✅ Password hint: your name + the year we started 🦞';
+  msgEl.style.color = 'var(--green)';
 }
 
 // Auto-show if already authenticated in this session
